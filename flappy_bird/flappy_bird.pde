@@ -17,10 +17,15 @@ int score = 0;
 
 String gameState = "menu"; // "menu", "play", "gameOver"
 
+PImage birdImage;  // Declare variable for the bird image
+
 void setup() {
   size(600, 400);
   textAlign(CENTER, CENTER);
   textSize(32);
+
+  birdImage = loadImage("wingup.png");  // Load your image here (must be in data folder)
+
   resetGame();
 }
 
@@ -55,12 +60,12 @@ void runGame() {
     birdAngle = constrain(birdAngle + radians(2), radians(-20), radians(90));
   }
 
-  // Draw bird with rotation
+  // Draw bird image with rotation
   pushMatrix();
   translate(bird.x, bird.y);
   rotate(birdAngle);
-  fill(255, 255, 0);
-  ellipse(0, 0, 32, 32);
+  imageMode(CENTER);
+  image(birdImage, 0, 0, 40, 40);  // Draw image centered, adjust size as needed
   popMatrix();
 
   // === Pipes ===
