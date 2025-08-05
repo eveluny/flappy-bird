@@ -82,7 +82,8 @@ void runGame() {
   translate(monkey.x, monkey.y);
   rotate(monkeyAngle);
   imageMode(CENTER);
-  image(monkeyImage, 0, 0, monkeyImage.width * 0.2, monkeyImage.height * 0.2); // smaller head
+  //image(monkeyImage, 0, 0, monkeyImage.width * 0.2, monkeyImage.height * 0.2); // smaller head
+  image(monkeyImage, 0, 0, 60, 60); // draws monkey at 20x20 pixels
   popMatrix();
 
   // === Bananas ===
@@ -91,8 +92,8 @@ void runGame() {
     b.x -= bananaSpeed;
 
     // Draw banana
-    image(bananaImage, b.x, b.y, bananaImage.width * 0.15, bananaImage.height * 0.15);
-
+    //image(bananaImage, b.x, b.y, bananaImage.width * 0.15, bananaImage.height * 0.15);
+    image(bananaImage, b.x, b.y, 80, 80);
     // Recycle banana if off-screen
     if (b.x < -bananaImage.width) {
       b.x = width + random(100, 300);
@@ -117,7 +118,7 @@ void runGame() {
   }
 
   // Draw top pipe
-  fill(139, 69, 19); // brown color
+  fill(34, 139, 34); //  color
   rect(pipeX, pipeYOffset, pipeWidth, topPipeHeight);
 
   // Draw bottom pipe
