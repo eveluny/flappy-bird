@@ -22,25 +22,27 @@ PImage bananaImage;
 
 ArrayList<PVector> bananas = new ArrayList<PVector>();
 
-SoundFile bananaSound;      // Sound for eating banana
-SoundFile backgroundMusic;  // Background music for menu and gameplay
-SoundFile gameOverSound;    // Sound for game over
-SoundFile impactSound;      // Impact sound (louder)
+SoundFile bananaSound;
+SoundFile backgroundMusic;
+SoundFile gameOverSound;
+SoundFile impactSound;
+SoundFile tutorialSound;
 
-boolean playedGameOverSound = false;  // To play gameOverSound only once per game over
-boolean playedImpactSound = false;    // To play impact sound only once per collision
+boolean playedGameOverSound = false;
+boolean playedImpactSound = false;
+boolean playedTutorialSound = false;
 
 void setup() {
   size(600, 400);
   textAlign(CENTER, CENTER);
   textSize(32);
 
-  bananaSound = new SoundFile(this, "gamesound.wav");          
+  bananaSound = new SoundFile(this, "gamesound.wav");
   backgroundMusic = new SoundFile(this, "backgroundmusic.wav");
   gameOverSound = new SoundFile(this, "gameoversound.wav");
   impactSound = new SoundFile(this, "impact.wav");
-  
-  impactSound.amp(2.0);  // Make impact sound louder
+  impactSound.amp(2.0);
+  tutorialSound = new SoundFile(this, "tutorialsound.wav");
 
   backgroundMusic.loop();
 
@@ -53,23 +55,30 @@ void setup() {
 void draw() {
   background(135, 206, 250);
 
-  // Manage background music based on gameState
+  // Control which music is playing
   if (gameState.equals("menu") || gameState.equals("play")) {
     if (!backgroundMusic.isPlaying()) backgroundMusic.loop();
-    playedGameOverSound = false;  // Reset game over sound flag
-    playedImpactSound = false;    // Reset impact sound flag
-  } else {
+    if (tutorialSound.isPlaying()) tutorialSound.stop();
+    playedGameOverSound = false;
+    playedImpactSound = false;
+    playedTutorialSound = false;
+  } else if (gameState.equals("tutorial")) {
     if (backgroundMusic.isPlaying()) backgroundMusic.stop();
-  }
-
-  // Play game over sound once
-  if (gameState.equals("gameOver")) {
-    if (!playedGameOverSound) {
-      gameOverSound.play();
-      playedGameOverSound = true;
+    if (!playedTutorialSound) {
+      tutorialSound.play();
+      playedTutorialSound = true;
     }
+  } else { // gameOver
+    if (backgroundMusic.isPlaying()) backgroundMusic.stop();
+    if (tutorialSound.isPlaying()) tutorialSound.stop();
   }
 
+  if (gameState.equals("gameOver") && !playedGameOverSound) {
+    gameOverSound.play();
+    playedGameOverSound = true;
+  }
+
+  // Render screens
   if (gameState.equals("menu")) {
     showMenu();
   } else if (gameState.equals("play")) {
@@ -88,7 +97,7 @@ void showMenu() {
 
   imageMode(CENTER);
   image(monkeyImage, width / 2 - 120, height / 2 - 40, 40, 40);
-  text("Flappy Monkey", width / 2 + 20, height / 2 - 40);
+  text("Manic Monkey", width / 2 + 20, height / 2 - 40);
 
   textSize(24);
   text("Press SPACE to Start", width / 2, height / 2 + 10);
@@ -159,7 +168,6 @@ void runGame() {
     }
   }
 
-  // Check collision
   boolean hitPipeOrGround = (bird.y > height || bird.y < 0 ||
     (bird.x + 16 > pipeX && bird.x - 16 < pipeX + pipeWidth &&
      (bird.y - 16 < topPipeHeight + pipeYOffset || bird.y + 16 > topPipeHeight + pipeGap + pipeYOffset)));
@@ -223,4 +231,5 @@ void resetGame() {
   score = 0;
   playedGameOverSound = false;
   playedImpactSound = false;
+  playedTutorialSound = false;
 }
