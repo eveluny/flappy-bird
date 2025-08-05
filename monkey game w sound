@@ -24,15 +24,25 @@ ArrayList<PVector> bananas = new ArrayList<PVector>();
 
 SoundFile bananaSound;      // Sound for eating banana
 SoundFile backgroundMusic;  // Background music for menu and gameplay
+SoundFile gameOverSound;    // Sound for game over
+SoundFile impactSound;      // Impact sound (louder)
+
+boolean playedGameOverSound = false;  // To play gameOverSound only once per game over
+boolean playedImpactSound = false;    // To play impact sound only once per collision
 
 void setup() {
   size(600, 400);
   textAlign(CENTER, CENTER);
   textSize(32);
 
-  bananaSound = new SoundFile(this, "gamesound.wav");          // banana eat sound
-  backgroundMusic = new SoundFile(this, "backgroundmusic.wav"); // background music
-  backgroundMusic.loop();  // Start looping right away
+  bananaSound = new SoundFile(this, "gamesound.wav");          
+  backgroundMusic = new SoundFile(this, "backgroundmusic.wav");
+  gameOverSound = new SoundFile(this, "gameoversound.wav");
+  impactSound = new SoundFile(this, "impact.wav");
+  
+  impactSound.amp(2.0);  // Make impact sound louder
+
+  backgroundMusic.loop();
 
   monkeyImage = loadImage("monkey.png");
   bananaImage = loadImage("banana.png");
@@ -41,13 +51,23 @@ void setup() {
 }
 
 void draw() {
-  background(135, 206, 250); // sky blue
+  background(135, 206, 250);
 
-  // Play music during menu and play, stop otherwise
+  // Manage background music based on gameState
   if (gameState.equals("menu") || gameState.equals("play")) {
     if (!backgroundMusic.isPlaying()) backgroundMusic.loop();
+    playedGameOverSound = false;  // Reset game over sound flag
+    playedImpactSound = false;    // Reset impact sound flag
   } else {
     if (backgroundMusic.isPlaying()) backgroundMusic.stop();
+  }
+
+  // Play game over sound once
+  if (gameState.equals("gameOver")) {
+    if (!playedGameOverSound) {
+      gameOverSound.play();
+      playedGameOverSound = true;
+    }
   }
 
   if (gameState.equals("menu")) {
@@ -118,17 +138,14 @@ void runGame() {
     topPipeHeight = random(50, height - pipeGap - 50);
     score++;
 
-    // Add banana
     float bananaY = random(topPipeHeight + 50, topPipeHeight + pipeGap - 50);
     bananas.add(new PVector(width, bananaY));
   }
 
-  // Draw pipes
-  fill(0, 200, 0); // green
+  fill(0, 200, 0);
   rect(pipeX, pipeYOffset, pipeWidth, topPipeHeight);
   rect(pipeX, topPipeHeight + pipeGap + pipeYOffset, pipeWidth, height);
 
-  // Draw bananas
   for (int i = bananas.size() - 1; i >= 0; i--) {
     PVector b = bananas.get(i);
     b.x -= pipeSpeed;
@@ -138,14 +155,21 @@ void runGame() {
     if (dist(bird.x, bird.y, b.x, b.y) < 20) {
       score++;
       bananas.remove(i);
-      bananaSound.play();  // play sound on banana eaten
+      bananaSound.play();
     }
   }
 
-  if (bird.y > height || bird.y < 0 ||
+  // Check collision
+  boolean hitPipeOrGround = (bird.y > height || bird.y < 0 ||
     (bird.x + 16 > pipeX && bird.x - 16 < pipeX + pipeWidth &&
-     (bird.y - 16 < topPipeHeight + pipeYOffset || bird.y + 16 > topPipeHeight + pipeGap + pipeYOffset))) {
+     (bird.y - 16 < topPipeHeight + pipeYOffset || bird.y + 16 > topPipeHeight + pipeGap + pipeYOffset)));
+
+  if (hitPipeOrGround) {
     gameState = "gameOver";
+    if (!playedImpactSound) {
+      impactSound.play();
+      playedImpactSound = true;
+    }
   }
 
   fill(255);
@@ -197,4 +221,6 @@ void resetGame() {
   topPipeHeight = random(50, height - pipeGap - 50);
   bananas.clear();
   score = 0;
+  playedGameOverSound = false;
+  playedImpactSound = false;
 }
