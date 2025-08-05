@@ -22,14 +22,17 @@ PImage bananaImage;
 
 ArrayList<PVector> bananas = new ArrayList<PVector>();
 
-SoundFile bananaSound;  // Sound for eating banana
+SoundFile bananaSound;      // Sound for eating banana
+SoundFile backgroundMusic;  // Background music for menu and gameplay
 
 void setup() {
   size(600, 400);
   textAlign(CENTER, CENTER);
   textSize(32);
 
-  bananaSound = new SoundFile(this, "gamesound.wav");  // Load banana sound (updated name)
+  bananaSound = new SoundFile(this, "gamesound.wav");          // banana eat sound
+  backgroundMusic = new SoundFile(this, "backgroundmusic.wav"); // background music
+  backgroundMusic.loop();  // Start looping right away
 
   monkeyImage = loadImage("monkey.png");
   bananaImage = loadImage("banana.png");
@@ -39,6 +42,13 @@ void setup() {
 
 void draw() {
   background(135, 206, 250); // sky blue
+
+  // Play music during menu and play, stop otherwise
+  if (gameState.equals("menu") || gameState.equals("play")) {
+    if (!backgroundMusic.isPlaying()) backgroundMusic.loop();
+  } else {
+    if (backgroundMusic.isPlaying()) backgroundMusic.stop();
+  }
 
   if (gameState.equals("menu")) {
     showMenu();
