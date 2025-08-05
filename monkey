@@ -1,13 +1,8 @@
-
-
-
-// === Flappy Monkey with Bananas ===
-
-PVector monkey;
-float monkeyVelocity = 0;
+PVector bird;
+float birdVelocity = 0;
 float gravity = 0.6;
 float flapPower = -10;
-float monkeyAngle = 0;
+float birdAngle = 0;
 
 float pipeX;
 float pipeWidth = 60;
@@ -17,33 +12,23 @@ float topPipeHeight;
 float pipeYOffset = 0;
 
 int score = 0;
-String gameState = "menu"; // "menu", "play", "gameOver"
 
-// Images
+String gameState = "menu"; // "menu", "play", "gameOver", "tutorial"
+
 PImage monkeyImage;
 PImage bananaImage;
 
-// Bananas
 ArrayList<PVector> bananas = new ArrayList<PVector>();
-int bananaSpacing = 200;
-int bananaSpeed = 3;
 
 void setup() {
   size(600, 400);
   textAlign(CENTER, CENTER);
   textSize(32);
 
-  monkeyImage = loadImage("monkey.png");   // Place in data folder
-  bananaImage = loadImage("banana.png");   // Place in data folder
+  monkeyImage = loadImage("monkey.png");
+  bananaImage = loadImage("banana.png");
 
   resetGame();
-
-  // Spawn initial bananas
-  for (int i = 0; i < 3; i++) {
-    float bx = width + i * bananaSpacing;
-    float by = random(50, height - 50);
-    bananas.add(new PVector(bx, by));
-  }
 }
 
 void draw() {
@@ -55,93 +40,107 @@ void draw() {
     runGame();
   } else if (gameState.equals("gameOver")) {
     showGameOver();
+  } else if (gameState.equals("tutorial")) {
+    showTutorial();
   }
 }
 
 void showMenu() {
   fill(0);
-  text("🐒 Flappy Monkey", width / 2, height / 2 - 40);
+  textSize(32);
+  textAlign(CENTER, CENTER);
+
+  imageMode(CENTER);
+  image(monkeyImage, width / 2 - 120, height / 2 - 40, 40, 40);
+  text("Flappy Monkey", width / 2 + 20, height / 2 - 40);
+
+  textSize(24);
   text("Press SPACE to Start", width / 2, height / 2 + 10);
-  text("Press Q to Quit", width / 2, height / 2 + 50);
+  text("Press T for Tutorial", width / 2, height / 2 + 40);
+  text("Press Q to Quit", width / 2, height / 2 + 70);
+}
+
+void showTutorial() {
+  background(255);
+  fill(0);
+  textAlign(CENTER, CENTER);
+  textSize(22);
+  text("How to Play:", width / 2, 50);
+
+  textSize(18);
+  text("Click or Press SPACE/W to Flap", width / 2, 120);
+  text("Collect Bananas for Points", width / 2, 160);
+  text("Avoid the Pipes", width / 2, 200);
+  text("Hitting a Pipe or the Ground Ends the Game", width / 2, 240);
+
+  textSize(16);
+  text("Press M to return to the Menu", width / 2, height - 40);
 }
 
 void runGame() {
-  // === Monkey Physics ===
-  monkeyVelocity += gravity;
-  monkey.y += monkeyVelocity;
+  birdVelocity += gravity;
+  bird.y += birdVelocity;
 
-  // Animate tilt
-  if (monkeyVelocity < 0) {
-    monkeyAngle = radians(-20);
+  if (birdVelocity < 0) {
+    birdAngle = radians(-20);
   } else {
-    monkeyAngle = constrain(monkeyAngle + radians(2), radians(-20), radians(90));
+    birdAngle = constrain(birdAngle + radians(2), radians(-20), radians(90));
   }
 
-  // Draw monkey
   pushMatrix();
-  translate(monkey.x, monkey.y);
-  rotate(monkeyAngle);
+  translate(bird.x, bird.y);
+  rotate(birdAngle);
   imageMode(CENTER);
-  //image(monkeyImage, 0, 0, monkeyImage.width * 0.2, monkeyImage.height * 0.2); // smaller head
-  image(monkeyImage, 0, 0, 60, 60); // draws monkey at 20x20 pixels
+  image(monkeyImage, 0, 0, 60, 60);
   popMatrix();
 
-  // === Bananas ===
-  for (int i = bananas.size() - 1; i >= 0; i--) {
-    PVector b = bananas.get(i);
-    b.x -= bananaSpeed;
-
-    // Draw banana
-    //image(bananaImage, b.x, b.y, bananaImage.width * 0.15, bananaImage.height * 0.15);
-    image(bananaImage, b.x, b.y, 80, 80);
-    // Recycle banana if off-screen
-    if (b.x < -bananaImage.width) {
-      b.x = width + random(100, 300);
-      b.y = random(50, height - 50);
-    }
-
-    // Collision: Monkey collects banana
-    if (dist(monkey.x, monkey.y, b.x, b.y) < 30) {
-      score++;
-      b.x = width + random(100, 300);
-      b.y = random(50, height - 50);
-    }
-  }
-
-  // === Pipes ===
   pipeX -= pipeSpeed;
   pipeYOffset = sin(frameCount * 0.03) * 20;
 
   if (pipeX < -pipeWidth) {
     pipeX = width;
     topPipeHeight = random(50, height - pipeGap - 50);
+    score++;
+
+    // Add banana
+    float bananaY = random(topPipeHeight + 50, topPipeHeight + pipeGap - 50);
+    bananas.add(new PVector(width, bananaY));
   }
 
-  // Draw top pipe
-  fill(34, 139, 34); //  color
+  // Draw pipes
+  fill(0, 200, 0); // green
   rect(pipeX, pipeYOffset, pipeWidth, topPipeHeight);
-
-  // Draw bottom pipe
   rect(pipeX, topPipeHeight + pipeGap + pipeYOffset, pipeWidth, height);
 
-  // === Collision Check with Pipes ===
-  if (monkey.y > height || monkey.y < 0 ||
-      (monkey.x + 16 > pipeX && monkey.x - 16 < pipeX + pipeWidth &&
-       (monkey.y - 16 < topPipeHeight + pipeYOffset ||
-        monkey.y + 16 > topPipeHeight + pipeGap + pipeYOffset))) {
+  // Draw bananas
+  for (int i = bananas.size() - 1; i >= 0; i--) {
+    PVector b = bananas.get(i);
+    b.x -= pipeSpeed;
+
+    //image(bananaImage, b.x, b.y, 20, 20); // small banana
+    image(bananaImage, b.x, b.y, 80, 80);
+
+    if (dist(bird.x, bird.y, b.x, b.y) < 20) {
+      score++;
+      bananas.remove(i);
+    }
+  }
+
+  if (bird.y > height || bird.y < 0 ||
+    (bird.x + 16 > pipeX && bird.x - 16 < pipeX + pipeWidth &&
+     (bird.y - 16 < topPipeHeight + pipeYOffset || bird.y + 16 > topPipeHeight + pipeGap + pipeYOffset))) {
     gameState = "gameOver";
   }
 
-  // === Score ===
   fill(255);
-  text("🍌 Bananas: " + score, width / 2, 30);
+  text("Score: " + score, width / 2, 30);
 }
 
 void showGameOver() {
   fill(0);
   text("Game Over!", width / 2, height / 2 - 40);
-  text("Bananas Collected: " + score, width / 2, height / 2);
-  text("SPACE: Restart | R: Menu | Q: Quit", width / 2, height / 2 + 60);
+  text("Final Score: " + score, width / 2, height / 2);
+  text("SPACE: Restart | R: Main Menu | Q: Quit", width / 2, height / 2 + 60);
 }
 
 void keyPressed() {
@@ -150,11 +149,13 @@ void keyPressed() {
       gameState = "play";
     } else if (key == 'q' || key == 'Q') {
       exit();
+    } else if (key == 't' || key == 'T') {
+      gameState = "tutorial";
     }
   } else if (gameState.equals("play")) {
     if (key == ' ' || key == 'w') {
-      monkeyVelocity = flapPower;
-      monkeyAngle = radians(-30); // Jump tilt
+      birdVelocity = flapPower;
+      birdAngle = radians(-30);
     }
   } else if (gameState.equals("gameOver")) {
     if (key == ' ') {
@@ -165,22 +166,19 @@ void keyPressed() {
     } else if (key == 'q' || key == 'Q') {
       exit();
     }
+  } else if (gameState.equals("tutorial")) {
+    if (key == 'm' || key == 'M') {
+      gameState = "menu";
+    }
   }
 }
 
 void resetGame() {
-  monkey = new PVector(150, height / 2);
-  monkeyVelocity = 0;
-  monkeyAngle = 0;
+  bird = new PVector(150, height / 2);
+  birdVelocity = 0;
+  birdAngle = 0;
   pipeX = width;
   topPipeHeight = random(50, height - pipeGap - 50);
-  score = 0;
-
-  // Reset bananas
   bananas.clear();
-  for (int i = 0; i < 3; i++) {
-    float bx = width + i * bananaSpacing;
-    float by = random(50, height - 50);
-    bananas.add(new PVector(bx, by));
-  }
+  score = 0;
 }
