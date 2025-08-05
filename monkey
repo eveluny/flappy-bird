@@ -1,3 +1,5 @@
+import processing.sound.*;
+
 PVector bird;
 float birdVelocity = 0;
 float gravity = 0.6;
@@ -20,11 +22,23 @@ PImage bananaImage;
 
 ArrayList<PVector> bananas = new ArrayList<PVector>();
 
+SoundFile bananaSound;      // Sound for eating banana
+SoundFile backgroundMusic;  // Background music
+SoundFile impactSound;      // Sound for collision
+
 void setup() {
   size(600, 400);
   textAlign(CENTER, CENTER);
   textSize(32);
 
+  // Load sounds
+  bananaSound = new SoundFile(this, "gamesound.wav");
+  backgroundMusic = new SoundFile(this, "backgroundmusic.wav");
+  impactSound = new SoundFile(this, "impact.wav");
+
+  backgroundMusic.loop(); // Start background music
+
+  // Load images
   monkeyImage = loadImage("monkey.png");
   bananaImage = loadImage("banana.png");
 
@@ -33,6 +47,13 @@ void setup() {
 
 void draw() {
   background(135, 206, 250); // sky blue
+
+  // Control background music
+  if (gameState.equals("menu") || gameState.equals("play")) {
+    if (!backgroundMusic.isPlaying()) backgroundMusic.loop();
+  } else {
+    if (backgroundMusic.isPlaying()) backgroundMusic.stop();
+  }
 
   if (gameState.equals("menu")) {
     showMenu();
@@ -81,12 +102,14 @@ void runGame() {
   birdVelocity += gravity;
   bird.y += birdVelocity;
 
+  // Tilt animation
   if (birdVelocity < 0) {
     birdAngle = radians(-20);
   } else {
     birdAngle = constrain(birdAngle + radians(2), radians(-20), radians(90));
   }
 
+  // Draw monkey
   pushMatrix();
   translate(bird.x, bird.y);
   rotate(birdAngle);
@@ -94,6 +117,7 @@ void runGame() {
   image(monkeyImage, 0, 0, 60, 60);
   popMatrix();
 
+  // Move pipes
   pipeX -= pipeSpeed;
   pipeYOffset = sin(frameCount * 0.03) * 20;
 
@@ -108,7 +132,7 @@ void runGame() {
   }
 
   // Draw pipes
-  fill(0, 200, 0); // green
+  fill(0, 200, 0); // Green
   rect(pipeX, pipeYOffset, pipeWidth, topPipeHeight);
   rect(pipeX, topPipeHeight + pipeGap + pipeYOffset, pipeWidth, height);
 
@@ -117,21 +141,24 @@ void runGame() {
     PVector b = bananas.get(i);
     b.x -= pipeSpeed;
 
-    //image(bananaImage, b.x, b.y, 20, 20); // small banana
     image(bananaImage, b.x, b.y, 80, 80);
 
     if (dist(bird.x, bird.y, b.x, b.y) < 20) {
       score++;
       bananas.remove(i);
+      bananaSound.play();  // Play banana sound
     }
   }
 
+  // Collision check
   if (bird.y > height || bird.y < 0 ||
     (bird.x + 16 > pipeX && bird.x - 16 < pipeX + pipeWidth &&
      (bird.y - 16 < topPipeHeight + pipeYOffset || bird.y + 16 > topPipeHeight + pipeGap + pipeYOffset))) {
+    impactSound.play(); // 🔊 Play impact sound
     gameState = "gameOver";
   }
 
+  // Draw score
   fill(255);
   text("Score: " + score, width / 2, 30);
 }
