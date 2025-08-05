@@ -9,11 +9,14 @@ float birdAngle = 0;
 float pipeX;
 float pipeWidth = 60;
 float pipeGap = 150;
-float pipeSpeed = 3;
+float pipeSpeed;
+
 float topPipeHeight;
 float pipeYOffset = 0;
 
 int score = 0;
+int pipesPassed = 0;
+int bananasCollected = 0;
 
 String gameState = "menu"; // "menu", "play", "gameOver", "tutorial"
 
@@ -21,6 +24,9 @@ PImage monkeyImage;
 PImage bananaImage;
 
 ArrayList<PVector> bananas = new ArrayList<PVector>();
+ArrayList<PVector> clouds = new ArrayList<PVector>();
+ArrayList<Float> treeXPositions = new ArrayList<Float>();
+ArrayList<PVector> floatingBananas = new ArrayList<PVector>();
 
 SoundFile bananaSound;
 SoundFile backgroundMusic;
@@ -41,7 +47,7 @@ void setup() {
   backgroundMusic = new SoundFile(this, "backgroundmusic.wav");
   gameOverSound = new SoundFile(this, "gameoversound.wav");
   impactSound = new SoundFile(this, "impact.wav");
-  impactSound.amp(2.0);
+  impactSound.amp(2.0);  // make impact louder
   tutorialSound = new SoundFile(this, "tutorialsound.wav");
 
   backgroundMusic.loop();
@@ -49,13 +55,29 @@ void setup() {
   monkeyImage = loadImage("monkey.png");
   bananaImage = loadImage("banana.png");
 
+  // Initialize clouds
+  for (int i = 0; i < 5; i++) {
+    clouds.add(new PVector(random(width), random(30, 120)));
+  }
+
+  // Initialize tree X positions for swaying trees in menu
+  for (int i = 0; i < 6; i++) {
+    treeXPositions.add(i * 100.0);
+  }
+
+  // Initialize floating bananas for tutorial background
+  for (int i = 0; i < 7; i++) {
+    floatingBananas.add(new PVector(random(width), random(100, height - 100)));
+  }
+
   resetGame();
 }
 
 void draw() {
-  background(135, 206, 250);
+  background(135, 206, 250);  // sky blue
+  drawClouds();
 
-  // Control which music is playing
+  // Music and sound logic based on game state
   if (gameState.equals("menu") || gameState.equals("play")) {
     if (!backgroundMusic.isPlaying()) backgroundMusic.loop();
     if (tutorialSound.isPlaying()) tutorialSound.stop();
@@ -68,7 +90,7 @@ void draw() {
       tutorialSound.play();
       playedTutorialSound = true;
     }
-  } else { // gameOver
+  } else { // gameOver or other states
     if (backgroundMusic.isPlaying()) backgroundMusic.stop();
     if (tutorialSound.isPlaying()) tutorialSound.stop();
   }
@@ -78,8 +100,8 @@ void draw() {
     playedGameOverSound = true;
   }
 
-  // Render screens
   if (gameState.equals("menu")) {
+    drawSwayingTrees();
     showMenu();
   } else if (gameState.equals("play")) {
     runGame();
@@ -87,6 +109,37 @@ void draw() {
     showGameOver();
   } else if (gameState.equals("tutorial")) {
     showTutorial();
+  }
+}
+
+void drawClouds() {
+  fill(255, 240);
+  noStroke();
+  for (PVector c : clouds) {
+    ellipse(c.x, c.y, 60, 40);
+    ellipse(c.x + 20, c.y + 10, 50, 30);
+    ellipse(c.x - 20, c.y + 10, 50, 30);
+    c.x -= 0.4;
+    if (c.x < -60) {
+      c.x = width + random(50);
+      c.y = random(30, 120);
+    }
+  }
+}
+
+void drawSwayingTrees() {
+  for (int i = 0; i < treeXPositions.size(); i++) {
+    float baseX = treeXPositions.get(i);
+    float sway = sin(frameCount * 0.05 + i) * 5;
+
+    float trunkHeight = 60;
+    float treeBaseY = height - trunkHeight;
+
+    fill(139, 69, 19);
+    rect(baseX + sway, treeBaseY, 10, trunkHeight);
+
+    fill(34, 139, 34);
+    ellipse(baseX + sway + 5, treeBaseY - 20, 40, 40);
   }
 }
 
@@ -107,6 +160,9 @@ void showMenu() {
 
 void showTutorial() {
   background(255);
+  drawClouds();
+  drawFloatingBananas();
+
   fill(0);
   textAlign(CENTER, CENTER);
   textSize(22);
@@ -122,7 +178,22 @@ void showTutorial() {
   text("Press M to return to the Menu", width / 2, height - 40);
 }
 
+void drawFloatingBananas() {
+  for (PVector b : floatingBananas) {
+    float offsetY = sin(frameCount * 0.05 + b.x) * 5;
+    image(bananaImage, b.x, b.y + offsetY, 40, 40);
+    b.x += 0.6;
+
+    if (b.x > width + 40) {
+      b.x = -random(60, 100);
+      b.y = random(80, height - 100);
+    }
+  }
+}
+
 void runGame() {
+  pipeSpeed = 3 + (score / 3);
+
   birdVelocity += gravity;
   bird.y += birdVelocity;
 
@@ -145,10 +216,16 @@ void runGame() {
   if (pipeX < -pipeWidth) {
     pipeX = width;
     topPipeHeight = random(50, height - pipeGap - 50);
-    score++;
+    score += 1;  // 1 point for passing pipe
+    pipesPassed++;
 
-    float bananaY = random(topPipeHeight + 50, topPipeHeight + pipeGap - 50);
-    bananas.add(new PVector(width, bananaY));
+    int bananasToSpawn = 1 + pipesPassed / 2;
+
+    for (int i = 0; i < bananasToSpawn; i++) {
+      float bananaY = random(topPipeHeight + 50, topPipeHeight + pipeGap - 50);
+      float offsetX = i * 30;
+      bananas.add(new PVector(width + offsetX, bananaY));
+    }
   }
 
   fill(0, 200, 0);
@@ -158,21 +235,21 @@ void runGame() {
   for (int i = bananas.size() - 1; i >= 0; i--) {
     PVector b = bananas.get(i);
     b.x -= pipeSpeed;
-
     image(bananaImage, b.x, b.y, 80, 80);
-
     if (dist(bird.x, bird.y, b.x, b.y) < 20) {
-      score++;
+      score += 2;  // 2 points for eating banana
+      bananasCollected++;  // count bananas collected
       bananas.remove(i);
       bananaSound.play();
     }
   }
 
-  boolean hitPipeOrGround = (bird.y > height || bird.y < 0 ||
+  boolean hit = bird.y > height || bird.y < 0 ||
     (bird.x + 16 > pipeX && bird.x - 16 < pipeX + pipeWidth &&
-     (bird.y - 16 < topPipeHeight + pipeYOffset || bird.y + 16 > topPipeHeight + pipeGap + pipeYOffset)));
+    (bird.y - 16 < topPipeHeight + pipeYOffset ||
+     bird.y + 16 > topPipeHeight + pipeGap + pipeYOffset));
 
-  if (hitPipeOrGround) {
+  if (hit) {
     gameState = "gameOver";
     if (!playedImpactSound) {
       impactSound.play();
@@ -181,13 +258,14 @@ void runGame() {
   }
 
   fill(255);
-  text("Score: " + score, width / 2, 30);
+  text("Score: " + score + "   Bananas: " + bananasCollected, width / 2, 30);
 }
 
 void showGameOver() {
   fill(0);
   text("Game Over!", width / 2, height / 2 - 40);
   text("Final Score: " + score, width / 2, height / 2);
+  text("Bananas Collected: " + bananasCollected, width / 2, height / 2 + 30);
   text("SPACE: Restart | R: Main Menu | Q: Quit", width / 2, height / 2 + 60);
 }
 
@@ -229,6 +307,8 @@ void resetGame() {
   topPipeHeight = random(50, height - pipeGap - 50);
   bananas.clear();
   score = 0;
+  pipesPassed = 0;
+  bananasCollected = 0;
   playedGameOverSound = false;
   playedImpactSound = false;
   playedTutorialSound = false;
