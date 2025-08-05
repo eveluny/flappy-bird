@@ -29,6 +29,7 @@ ArrayList<Float> treeXPositions = new ArrayList<Float>();
 ArrayList<PVector> floatingBananas = new ArrayList<PVector>();
 ArrayList<PVector> floatingMonkeys = new ArrayList<PVector>();
 ArrayList<PVector> gameOverBananas = new ArrayList<PVector>();
+ArrayList<PVector> gameOverMonkeys = new ArrayList<PVector>();
 
 SoundFile bananaSound;
 SoundFile backgroundMusic;
@@ -86,6 +87,11 @@ void setup() {
     gameOverBananas.add(new PVector(random(width), random(50, height - 50)));
   }
 
+  // Initialize floating monkeys for game over screen
+  for (int i = 0; i < 6; i++) {
+    gameOverMonkeys.add(new PVector(random(width), random(60, height - 60)));
+  }
+
   resetGame();
 }
 
@@ -122,6 +128,7 @@ void draw() {
     runGame();
   } else if (gameState.equals("gameOver")) {
     drawFloatingGameOverBananas();
+    drawFloatingGameOverMonkeys();
     showGameOver();
   } else if (gameState.equals("tutorial")) {
     showTutorial();
@@ -234,6 +241,19 @@ void drawFloatingGameOverBananas() {
   }
 }
 
+void drawFloatingGameOverMonkeys() {
+  for (PVector m : gameOverMonkeys) {
+    float offsetY = sin(frameCount * 0.035 + m.x) * 6;
+    image(monkeyImage, m.x, m.y + offsetY, 50, 50);
+    m.x += 0.45;
+
+    if (m.x > width + 50) {
+      m.x = -random(60, 150);
+      m.y = random(60, height - 60);
+    }
+  }
+}
+
 void runGame() {
   pipeSpeed = 3 + (score / 3);
 
@@ -305,8 +325,6 @@ void runGame() {
 }
 
 void showGameOver() {
-  drawFloatingGameOverBananas();
-
   fill(0);
   textSize(48);
   text("Game Over!", width / 2, height / 2 - 60);
@@ -362,22 +380,4 @@ void resetGame() {
   playedGameOverSound = false;
   playedImpactSound = false;
   playedTutorialSound = false;
-
-  // Reset game over bananas positions
-  for (int i = 0; i < gameOverBananas.size(); i++) {
-    gameOverBananas.get(i).x = random(width);
-    gameOverBananas.get(i).y = random(50, height - 50);
-  }
-
-  // Reset floating monkeys position (wider spread)
-  for (int i = 0; i < floatingMonkeys.size(); i++) {
-    floatingMonkeys.get(i).x = random(width * 1.5);
-    floatingMonkeys.get(i).y = random(100, height - 150);
-  }
-
-  // Reset floating bananas position (wider spread)
-  for (int i = 0; i < floatingBananas.size(); i++) {
-    floatingBananas.get(i).x = random(width * 1.5);
-    floatingBananas.get(i).y = random(80, height - 80);
-  }
 }
